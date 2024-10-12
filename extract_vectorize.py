@@ -11,8 +11,7 @@ from snippets import *
 
 
 class GlobalAveragePooling1D(keras.layers.GlobalAveragePooling1D):
-    """自定义全局池化
-    """
+    """自定义全局池化"""
     def call(self, inputs, mask=None):
         if mask is not None:
             mask = K.cast(mask, K.floatx())[:, :, None]
@@ -34,9 +33,7 @@ encoder = Model(encoder.inputs, output)
 
 
 def load_data(filename):
-    """加载数据
-    返回：[texts]
-    """
+    """加载数据, 返回：[texts]"""
     D = []
     with open(filename) as f:
         for l in f:
@@ -46,8 +43,7 @@ def load_data(filename):
 
 
 def predict(texts):
-    """句子列表转换为句向量
-    """
+    """句子列表转换为句向量"""
     batch_token_ids, batch_segment_ids = [], []
     for text in texts:
         token_ids, segment_ids = tokenizer.encode(text, maxlen=512)

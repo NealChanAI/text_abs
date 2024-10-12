@@ -1,9 +1,4 @@
 #! -*- coding: utf-8 -*-
-# 法研杯2020 司法摘要
-# 工具代码合集
-# 注：最好写绝对路径，否则可能出现无法预料的错误。
-# 科学空间：https://kexue.fm
-
 import numpy as np
 from rouge import Rouge
 import os, sys
@@ -11,8 +6,8 @@ import jieba
 from bert4keras.snippets import open
 
 # 自定义词典
-user_dict_path = '/root/cail2020/sfzyx/datasets/user_dict.txt'
-user_dict_path_2 = '/root/cail2020/sfzyx/datasets/user_dict_2.txt'
+user_dict_path = './datasets/user_dict.txt'
+user_dict_path_2 = './datasets/user_dict_2.txt'
 jieba.load_userdict(user_dict_path)
 jieba.initialize()
 
@@ -20,21 +15,21 @@ jieba.initialize()
 sys.setrecursionlimit(1000000)
 
 # 标注数据
-data_json = '/root/cail2020/sfzyx/datasets/train.json'
+data_json = './datasets/train.json'
 
 # 保存权重的文件夹
 if not os.path.exists('weights'):
     os.mkdir('weights')
 
 # bert配置
-config_path = '/root/kg/bert/chinese_roberta_wwm_ext_L-12_H-768_A-12/bert_config.json'
-checkpoint_path = '/root/kg/bert/chinese_roberta_wwm_ext_L-12_H-768_A-12/bert_model.ckpt'
-dict_path = '/root/kg/bert/chinese_roberta_wwm_ext_L-12_H-768_A-12/vocab.txt'
+config_path = 'pretrain_model/chinese_roberta_wwm_ext_L-12_H-768_A-12/bert_config.json'
+checkpoint_path = 'pretrain_model/chinese_roberta_wwm_ext_L-12_H-768_A-12/bert_model.ckpt'
+dict_path = 'pretrain_model/chinese_roberta_wwm_ext_L-12_H-768_A-12/vocab.txt'
 
 # nezha配置
-nezha_config_path = '/root/kg/bert/nezha_base/bert_config.json'
-nezha_checkpoint_path = '/root/kg/bert/nezha_base/model.ckpt-900000'
-nezha_dict_path = '/root/kg/bert/nezha_base/vocab.txt'
+nezha_config_path = 'pretrain_model/nezha_base/bert_config.json'
+nezha_checkpoint_path = 'pretrain_model/bert/nezha_base/model.ckpt-900000'
+nezha_dict_path = 'pretrain_model/nezha_base/vocab.txt'
 
 # 将数据划分N份，一份作为验证集
 num_folds = 15
