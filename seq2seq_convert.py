@@ -16,8 +16,8 @@ def fold_convert(data, data_x, fold):
     for d, yp in tqdm(zip(valid_data, y_pred), desc=u'转换中'):
         yp = yp[:len(d[0])]
         yp = np.where(yp > threshold)[0]
-        source_1 = ''.join([d[0][i] for i in yp])
-        source_2 = ''.join([d[0][i] for i in d[1]])
+        source_1 = ''.join([d[0][int(i)] for i in yp])
+        source_2 = ''.join([d[0][int(i)] for i in d[1]])
         result = {
             'source_1': source_1,
             'source_2': source_2,
