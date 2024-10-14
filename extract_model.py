@@ -37,8 +37,7 @@ def load_data(filename):
 
 
 class ResidualGatedConv1D(Layer):
-    """门控卷积
-    """
+    """门控卷积"""
     def __init__(self, filters, kernel_size, dilation_rate=1, **kwargs):
         super(ResidualGatedConv1D, self).__init__(**kwargs)
         self.filters = filters
@@ -121,8 +120,7 @@ model.summary()
 
 
 def evaluate(data, data_x, threshold=0.2):
-    """验证集评估
-    """
+    """验证集评估"""
     y_pred = model.predict(data_x)[:, :, 0]
     total_metrics = {k: 0.0 for k in metric_keys}
     for d, yp in tqdm(zip(data, y_pred), desc=u'评估中'):
@@ -136,8 +134,7 @@ def evaluate(data, data_x, threshold=0.2):
 
 
 class Evaluator(keras.callbacks.Callback):
-    """训练回调
-    """
+    """训练回调"""
     def __init__(self):
         self.best_metric = 0.0
 
@@ -159,7 +156,7 @@ if __name__ == '__main__':
 
     for i, d in enumerate(data):
         for j in d[1]:
-            data_y[i, j] = 1
+            data_y[i, int(j)] = 1
 
     train_data = data_split(data, fold, num_folds, 'train')
     valid_data = data_split(data, fold, num_folds, 'valid')
