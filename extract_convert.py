@@ -1,15 +1,10 @@
-#! -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 import os
 import json
 import numpy as np
 from tqdm import tqdm
-from bert4keras.snippets import open
-from bert4keras.snippets import text_segmentate
-from bert4keras.snippets import parallel_apply
-from snippets import *
-from data_process import get_csv_data
-from data_process import get_excel_data
-from data_process import train_test_split
+from snippets import compute_main_metric
+from data_process import get_csv_data, get_excel_data, train_test_split
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -17,24 +12,39 @@ warnings.filterwarnings("ignore")
 maxlen = 256
 
 
+def text_segmentate(text, length=1, delimiters=u'\n。；：，'):
+    """按照标点符号分割文本"""
+    sentences = []
+    buf = ''
+    for ch in text:
+        if ch in delimiters:
+            if buf:
+                sentences.append(buf)
+            buf = ''
+        else:
+            buf += ch
+    if buf:
+        sentences.append(buf)
+    return sentences
+
+
 def text_split(text, limited=True):
     """将长句按照标点分割为多个子句"""
     texts = text_segmentate(text, 1, u'\n。；：，')
     if limited:
-        # texts = texts[-maxlen:]
         texts = texts[:maxlen]
     return texts
 
 
 def extract_matching(texts, summaries, start_i=0, start_j=0):
-    """在texts中找若干句子，使得它们连起来与summaries尽可能相似
-    算法：texts和summaries都分句，然后找出summaries最长的句子，在texts
-          中找与之最相似的句子作为匹配，剩下部分递归执行。
+    """
+    在texts中找若干句子，使得它们连起来与summaries尽可能相似
+    最终找出文本和摘要中相似度较高的句子对，并将它们的索引返回
     """
     if len(texts) == 0 or len(summaries) == 0:
         return []
-    i = np.argmax([len(s) for s in summaries])
-    j = np.argmax([compute_main_metric(t, summaries[i], 'char') for t in texts])
+    i = np.argmax([len(s) for s in summaries])  # 寻找摘要中最长的句子
+    j = np.argmax([compute_main_metric(t, summaries[i], 'char') for t in texts])  # 寻找文本中与该摘要句子最相似的句子
     lm = extract_matching(texts[:j + 1], summaries[:i], start_i, start_j)
     rm = extract_matching(
         texts[j:], summaries[i + 1:], start_i + i + 1, start_j + j
@@ -43,13 +53,14 @@ def extract_matching(texts, summaries, start_i=0, start_j=0):
 
 
 def extract_flow(inputs):
+    """抽取式摘要的流程"""
     res = []
     for line in inputs:
         text, summary = line
-        texts = text_split(text, True)  # 取前maxlen句, 默认256
+        texts = text_split(text, True)
         summaries = text_split(summary, False)
         mapping = extract_matching(texts, summaries)
-        labels = sorted(set([i[1] for i in mapping]))
+        labels = sorted(set([i[1] for i in mapping]))  # text的索引(已排序)
         pred_summary = ''.join([texts[i] for i in labels])
         metric = compute_main_metric(pred_summary, summary)
         res.append([texts, labels, summary, metric])
@@ -57,9 +68,7 @@ def extract_flow(inputs):
 
 
 def load_data(filename):
-    """加载数据
-    返回：[(text, summary)]
-    """
+    """加载数据"""
     D = []
     with open(filename, encoding='utf-8') as f:
         for l in f:
@@ -70,24 +79,21 @@ def load_data(filename):
 
 
 def _load_data(dir_name):
-    """
-    返回处理完的excel数据集
-    """
-    # return get_csv_data(dir_name)
+    """加载并处理 Excel 数据集"""
     return get_excel_data(dir_name)
 
 
 def convert(data):
-    """分句，并转换为抽取式摘要
-    """
+    """分句，并转换为抽取式摘要"""
     D = extract_flow(data)
     total_metric = sum([d[3] for d in D])
-    D = [d[:3] for d in D]
+    D = [d[:3] for d in D]  # 排除metric指标, [texts, labels, summary]
     print(u'抽取结果的平均指标: %s' % (total_metric / len(D)))
     return D
 
 
 if __name__ == '__main__':
+    data_json = './datasets/train.json'
     data_random_order_json = data_json[:-5] + '_random_order.json'
     data_extract_json = data_json[:-5] + '_extract.json'
 
@@ -96,24 +102,21 @@ if __name__ == '__main__':
     data = convert(train_data)
 
     if os.path.exists(data_random_order_json):
-        idxs = json.load(open(data_random_order_json))
+        with open(data_random_order_json, 'r') as f:
+            idxs = json.load(f)
     else:
         idxs = list(range(len(data)))
         np.random.shuffle(idxs)
-        json.dump(idxs, open(data_random_order_json, 'w'))
+        with open(data_random_order_json, 'w') as f:
+            json.dump(idxs, f)
 
-    data = [data[i] for i in idxs]
+    data = [data[i] for i in idxs]  # 随机打乱数据
 
     with open(data_extract_json, 'w', encoding='utf-8') as f:
-        cnt = 0
         for d in data:
-            # print(cnt)
-            cnt += 1
-            # print(d)
             tmp_lst = list(d)
-            tmp_lst[1] = [str(i) for i in tmp_lst[1]]
+            tmp_lst[1] = [str(i) for i in tmp_lst[1]]  # int转str
             d = tuple(tmp_lst)
-            # print(d)
             f.write(json.dumps(d, ensure_ascii=False) + '\n')
 
     print(u'输入数据：%s' % data_json)

@@ -1,9 +1,10 @@
-#! -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 import numpy as np
 from rouge import Rouge
-import os, sys
+import os
+import sys
 import jieba
-from bert4keras.snippets import open
+import torch
 
 # 自定义词典
 user_dict_path = './datasets/user_dict.txt'
@@ -23,7 +24,8 @@ if not os.path.exists('weights'):
 
 # bert配置
 config_path = 'pretrain_model/chinese_roberta_wwm_ext_L-12_H-768_A-12/bert_config.json'
-checkpoint_path = 'pretrain_model/chinese_roberta_wwm_ext_L-12_H-768_A-12/bert_model.ckpt'
+# checkpoint_path = 'pretrain_model/chinese_roberta_wwm_ext_L-12_H-768_A-12/bert_model.ckpt'
+checkpoint_path = 'hfl/chinese-roberta-wwm-ext-large'
 dict_path = 'pretrain_model/chinese_roberta_wwm_ext_L-12_H-768_A-12/vocab.txt'
 
 # nezha配置
@@ -42,33 +44,30 @@ rouge = Rouge()
 
 
 def load_user_dict(filename):
-    """加载用户词典
-    """
+    """加载用户词典"""
     user_dict = []
     with open(filename, encoding='utf-8') as f:
-        for l in f:
-            w = l.split()[0]
-            user_dict.append(w)
+        for line in f:
+            word = line.split()[0]
+            user_dict.append(word)
     return user_dict
 
 
 def data_split(data, fold, num_folds, mode):
-    """划分训练集和验证集
-    """
+    """划分训练集和验证集"""
     if mode == 'train':
-        D = [d for i, d in enumerate(data) if i % num_folds != fold]
+        dataset = [d for i, d in enumerate(data) if i % num_folds != fold]
     else:
-        D = [d for i, d in enumerate(data) if i % num_folds == fold]
+        dataset = [d for i, d in enumerate(data) if i % num_folds == fold]
 
     if isinstance(data, np.ndarray):
-        return np.array(D)
+        return np.array(dataset)
     else:
-        return D
+        return dataset
 
 
 def compute_rouge(source, target, unit='word'):
-    """计算rouge-1、rouge-2、rouge-l
-    """
+    """计算rouge-1、rouge-2、rouge-l"""
     if unit == 'word':
         source = jieba.cut(source, HMM=False)
         target = jieba.cut(target, HMM=False)
@@ -89,8 +88,7 @@ def compute_rouge(source, target, unit='word'):
 
 
 def compute_metrics(source, target, unit='word'):
-    """计算所有metrics
-    """
+    """计算所有metrics"""
     metrics = compute_rouge(source, target, unit)
     metrics['main'] = (
         metrics['rouge-1'] * 0.2 + metrics['rouge-2'] * 0.4 +
@@ -100,6 +98,5 @@ def compute_metrics(source, target, unit='word'):
 
 
 def compute_main_metric(source, target, unit='word'):
-    """计算主要metric
-    """
+    """计算主要metric"""
     return compute_metrics(source, target, unit)['main']
